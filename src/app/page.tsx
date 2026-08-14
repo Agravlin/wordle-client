@@ -23,7 +23,8 @@ export default function Home() {
       if (!res.ok) throw new Error("Failed to create room");
 
       const data = await res.json(); 
-      router.push(`/room/${data.roomID}`);
+      console.log(data)
+      router.push(`/room/${data.room_id}`);
     } catch (error) {
       console.error("Failed to create room:", error);
     }
