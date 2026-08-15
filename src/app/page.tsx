@@ -10,7 +10,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function createRoom() {
+  const createRoom = async () => {
     const name = nickname.trim();
     if (!name || loading) return;
     setLoading(true);
@@ -24,21 +24,22 @@ export default function Home() {
       });
       if (!response.ok) throw new Error(await response.text());
       const data = await response.json() as { room_id: string };
+      localStorage.setItem("wordle_host_room", data.room_id.toUpperCase());
       router.push(`/room/${data.room_id}`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message.trim() || "Could not create a room." : "Could not create a room.");
       setLoading(false);
     }
-  }
+  };
 
-  function joinRoom(event: FormEvent) {
+  const joinRoom = (event: FormEvent) => {
     event.preventDefault();
     const name = nickname.trim();
     const code = roomCode.trim().toUpperCase();
     if (!name || !code) return;
     localStorage.setItem("wordle_nickname", name);
     router.push(`/room/${code}`);
-  }
+  };
 
   return (
     <main className="home-shell">

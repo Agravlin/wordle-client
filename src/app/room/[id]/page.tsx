@@ -57,6 +57,7 @@ export default function RoomPage() {
   const [phase, setPhase] = useState<"connecting" | "lobby" | "playing" | "finished" | "error">("connecting");
   const [notice, setNotice] = useState("Connecting to the room…");
   const [submitting, setSubmitting] = useState(false);
+  const [isHost, setIsHost] = useState(false);
   const ws = useRef<WebSocket | null>(null);
   const rejectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const guessInput = useRef<HTMLInputElement | null>(null);
@@ -71,7 +72,7 @@ export default function RoomPage() {
     let socket: WebSocket | undefined;
     let cancelled = false;
 
-    async function connect() {
+    const connect = async () => {
       try {
         const response = await fetch("/api/join", {
           method: "POST",
@@ -81,6 +82,7 @@ export default function RoomPage() {
         if (!response.ok) throw new Error(await response.text());
         if (cancelled) return;
         setNickname(storedNick);
+        setIsHost(localStorage.getItem("wordle_host_room") === roomId);
 
         socket = new WebSocket(socketAddress(roomId, storedNick));
         ws.current = socket;
@@ -93,12 +95,21 @@ export default function RoomPage() {
           if (message.type === "PLAYER_LIST") setPlayers(message.payload as string[]);
           if (message.type === "FULL_STATE") {
             const next = message.payload as Boards;
+            const freshRound = Object.values(next).every((board) => board.CurrentRow === 0);
             confirmedRows.current = Object.fromEntries(
               Object.entries(next).map(([player, board]) => [player, board.CurrentRow]),
             );
+            if (freshRound) {
+              setLetters([]);
+              setGuess("");
+              setSubmitting(false);
+            }
             setBoards(next);
-            setPhase(Object.values(next).some((board) => board.grid.some((row) => row.every((cell) => cell === 4))) ? "finished" : "playing");
-            setNotice(Object.values(next).some((board) => board.grid.some((row) => row.every((cell) => cell === 4))) ? "We have a winner!" : "Game on — find the five-letter word.");
+            const hasWinner = Object.values(next).some((board) =>
+              board.grid.some((row) => row.every((cell) => cell === 4)),
+            );
+            setPhase(hasWinner ? "finished" : "playing");
+            setNotice(hasWinner ? "We have a winner!" : "Game on — find the five-letter word.");
           }
           if (message.type === "BOARD_UPDATE") {
             const update = message.payload as { nick: string; board: Board };
@@ -110,7 +121,15 @@ export default function RoomPage() {
               if (rejectTimer.current) clearTimeout(rejectTimer.current);
               setSubmitting(false);
               setGuess("");
+              setNotice("Accepted — keep going!");
             }
+          }
+          if (message.type === "GUESS_REJECTED") {
+            const rejection = message.payload as { message?: string };
+            if (rejectTimer.current) clearTimeout(rejectTimer.current);
+            setSubmitting(false);
+            setNotice(rejection.message || "That word was not accepted. Try another.");
+            requestAnimationFrame(() => guessInput.current?.focus());
           }
         };
         socket.onerror = () => setNotice("Could not connect to the game server.");
@@ -124,7 +143,7 @@ export default function RoomPage() {
         setPhase("error");
         setNotice(error instanceof Error ? error.message.trim() || "Unable to join this room." : "Unable to join this room.");
       }
-    }
+    };
     connect();
     return () => {
       cancelled = true;
@@ -139,12 +158,13 @@ export default function RoomPage() {
 
   const updateGuess = useCallback((next: string) => {
     setGuess(next);
-    send({ action: "SYNC_ROW", row_state: Array.from({ length: COLS }, (_, i) => i < next.length ? 1 : 0) });
+    send({ action: "SYNC_ROW", row_state: Array.from({ length: COLS }, (_, index) => index < next.length ? 1 : 0) });
   }, [send]);
 
   const submitGuess = useCallback(() => {
     if (guess.length !== COLS || submitting) return;
     setSubmitting(true);
+    setNotice("Checking your word…");
     const row = boards[nickname]?.CurrentRow ?? 0;
     setLetters((current) => {
       const next = [...current];
@@ -154,8 +174,9 @@ export default function RoomPage() {
     send({ action: "GUESS", guess });
     rejectTimer.current = setTimeout(() => {
       setSubmitting(false);
-      setNotice("That word was not accepted. Try another.");
-    }, 1200);
+      setNotice("The server did not respond. Please try again.");
+      requestAnimationFrame(() => guessInput.current?.focus());
+    }, 8000);
   }, [boards, guess, nickname, send, submitting]);
 
   const pressKey = useCallback((key: string) => {
@@ -183,9 +204,11 @@ export default function RoomPage() {
   }, [phase, currentRow]);
 
   const keyboardStates = new Map<string, number>();
-  letters.forEach((rowLetters, row) => rowLetters?.forEach((letter, col) => {
-    keyboardStates.set(letter, Math.max(keyboardStates.get(letter) ?? 0, ownBoard?.grid?.[row]?.[col] ?? 0));
-  }));
+  letters.forEach((rowLetters, row) => {
+    rowLetters?.forEach((letter, col) => {
+      keyboardStates.set(letter, Math.max(keyboardStates.get(letter) ?? 0, ownBoard?.grid?.[row]?.[col] ?? 0));
+    });
+  });
 
   return (
     <main className="game-shell">
@@ -216,7 +239,7 @@ export default function RoomPage() {
           <div className="status-copy">
             <p className="eyebrow">{phase === "lobby" ? "Waiting room" : phase === "finished" ? "Round over" : "Your board"}</p>
             <h1>{phase === "lobby" ? "Ready to play?" : phase === "finished" ? "Nice game!" : "Guess the word"}</h1>
-            <p>{notice}</p>
+            <p aria-live="polite">{notice}{submitting && <span className="checking-dots" aria-hidden="true"><i /><i /><i /></span>}</p>
           </div>
 
           {phase === "lobby" ? (
@@ -225,6 +248,13 @@ export default function RoomPage() {
             <button className="primary-button" onClick={() => router.push("/")}>Back home</button>
           ) : (
             <>
+              {phase === "finished" && isHost && (
+                <button className="primary-button next-round-button" onClick={() => {
+                  setNotice("Starting the next round…");
+                  send({ action: "START_GAME" });
+                }}>Start next round</button>
+              )}
+              {phase === "finished" && !isHost && <p className="host-wait">Waiting for the host to start the next round…</p>}
               <div className="word-grid" aria-label="Wordle board" onClick={() => guessInput.current?.focus()}>
                 <input
                   ref={guessInput}
@@ -247,7 +277,8 @@ export default function RoomPage() {
                 {Array.from({ length: ROWS }, (_, row) => Array.from({ length: COLS }, (_, col) => {
                   const status = ownBoard?.grid?.[row]?.[col] ?? 0;
                   const letter = row === currentRow ? guess[col] : letters[row]?.[col];
-                  return <div key={`${row}-${col}`} className={tileClass(status, Boolean(letter))}>{letter}</div>;
+                  const checking = submitting && row === currentRow;
+                  return <div key={`${row}-${col}`} className={`${tileClass(status, Boolean(letter))} ${checking ? "tile-checking" : ""}`}>{letter}</div>;
                 }))}
               </div>
               <div className="keyboard" aria-label="On-screen keyboard">
