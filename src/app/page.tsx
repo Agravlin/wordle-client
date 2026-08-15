@@ -1,101 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Home() {
   const router = useRouter();
   const [nickname, setNickname] = useState("");
   const [roomCode, setRoomCode] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function handleCreateRoom() {
-    if (!nickname.trim()) return;
-
-    localStorage.setItem("wordle_nickname", nickname.trim());
-
+  async function createRoom() {
+    const name = nickname.trim();
+    if (!name || loading) return;
+    setLoading(true);
+    setError("");
+    localStorage.setItem("wordle_nickname", name);
     try {
-      const res = await fetch("/api/create", {
+      const response = await fetch("/api/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nickname: nickname.trim() }),
+        body: JSON.stringify({ nickname: name }),
       });
-      
-      if (!res.ok) throw new Error("Failed to create room");
-
-      const data = await res.json(); 
-      console.log(data)
+      if (!response.ok) throw new Error(await response.text());
+      const data = await response.json() as { room_id: string };
       router.push(`/room/${data.room_id}`);
-    } catch (error) {
-      console.error("Failed to create room:", error);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message.trim() || "Could not create a room." : "Could not create a room.");
+      setLoading(false);
     }
   }
 
-  function handleJoinRoom(e: React.SyntheticEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (roomCode.trim().length > 0 && nickname.trim().length > 0) {
-      
-      localStorage.setItem("wordle_nickname", nickname.trim());
-      
-      router.push(`/room/${roomCode.toUpperCase()}`);
-    }
+  function joinRoom(event: FormEvent) {
+    event.preventDefault();
+    const name = nickname.trim();
+    const code = roomCode.trim().toUpperCase();
+    if (!name || !code) return;
+    localStorage.setItem("wordle_nickname", name);
+    router.push(`/room/${code}`);
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-4 text-zinc-50">
-      <div className="w-full max-w-md space-y-8 text-center">
-        
-        <div className="space-y-2">
-          <h1 className="text-5xl font-bold tracking-tight">Wordle<span className="text-green-500">VS</span></h1>
-          <p className="text-zinc-400">Multiplayer arena</p>
-        </div>
+    <main className="home-shell">
+      <div className="ambient ambient-one" />
+      <div className="ambient ambient-two" />
+      <section className="home-card">
+        <div className="logo-mark" aria-hidden="true"><span>W</span><span>O</span><span>R</span><span>D</span><span>!</span></div>
+        <div className="brand"><span>WORD</span><span className="brand-accent">CLASH</span></div>
+        <p className="tagline">Wordle is better with company.</p>
 
-        <div className="space-y-6 pt-8">
-          <div>
-            <input
-              type="text"
-              value={nickname}
-              onChange={function(e) { setNickname(e.target.value); }}
-              placeholder="ENTER NICKNAME"
-              maxLength={12}
-              className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-4 py-3 text-center text-lg font-bold tracking-wide text-white outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
-            />
-          </div>
+        <label className="field-label" htmlFor="nickname">Your nickname</label>
+        <input id="nickname" className="text-input" value={nickname} onChange={(event) => setNickname(event.target.value)} placeholder="How should we call you?" maxLength={12} autoComplete="nickname" autoFocus />
 
-          <button
-            onClick={handleCreateRoom}
-            disabled={!nickname.trim()}
-            className="w-full rounded-md bg-green-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Create New Room
-          </button>
+        <button className="primary-button home-primary" onClick={createRoom} disabled={!nickname.trim() || loading}>
+          {loading ? "Creating…" : "Create a new room"}<span>→</span>
+        </button>
 
-          <div className="relative flex items-center py-2">
-            <div className="flex-grow border-t border-zinc-800"></div>
-            <span className="mx-4 flex-shrink-0 text-sm text-zinc-500">OR</span>
-            <div className="flex-grow border-t border-zinc-800"></div>
-          </div>
-
-          <form onSubmit={handleJoinRoom} className="flex space-x-2">
-            <input
-              type="text"
-              value={roomCode}
-              onChange={function(e) { setRoomCode(e.target.value.toUpperCase()); }}
-              placeholder="ROOM CODE"
-              maxLength={6}
-              disabled={!nickname.trim()}
-              className="w-full rounded-md border border-zinc-800 bg-zinc-900 px-4 py-3 text-center text-lg font-bold tracking-widest text-white outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-            <button
-              type="submit"
-              disabled={!roomCode.trim() || !nickname.trim()}
-              className="rounded-md bg-zinc-100 px-6 py-3 font-semibold text-zinc-900 transition-colors hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Join
-            </button>
-          </form>
-        </div>
-
-      </div>
+        <div className="divider"><span>or join a friend</span></div>
+        <form className="join-form" onSubmit={joinRoom}>
+          <input className="text-input code-input" value={roomCode} onChange={(event) => setRoomCode(event.target.value.replace(/[^a-z0-9]/gi, "").toUpperCase())} placeholder="ROOM CODE" maxLength={6} aria-label="Room code" />
+          <button className="secondary-button" disabled={!nickname.trim() || !roomCode.trim()}>Join room</button>
+        </form>
+        {error && <p className="form-error" role="alert">{error}</p>}
+        <p className="footer-note">No account needed · Up to 8 players</p>
+      </section>
     </main>
   );
 }

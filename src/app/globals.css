@@ -1,26 +1,28 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+:root { --ink:#18231e; --muted:#718078; --paper:#f8f7f1; --green:#55a36a; --green-dark:#398153; --yellow:#d7ad45; --gray:#6c746f; --line:#dcded7; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--paper); color:var(--ink); font-family:Arial, Helvetica, sans-serif; }
+button,input { font:inherit; }
+button { cursor:pointer; }
+button:disabled { cursor:not-allowed; opacity:.48; }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+.home-shell { position:relative; min-height:100vh; display:grid; place-items:center; overflow:hidden; padding:32px 20px; background:radial-gradient(circle at 50% 0%,#fff 0,#f8f7f1 56%,#eeefe8 100%); }
+.ambient { position:absolute; width:260px; height:260px; border:1px solid #d7ded5; border-radius:38px; transform:rotate(18deg); opacity:.45; }
+.ambient-one { top:-120px; left:-80px; }.ambient-two { right:-100px; bottom:-130px; transform:rotate(-14deg); }
+.home-card { position:relative; width:min(100%,430px); text-align:center; padding:42px 38px 34px; background:rgba(255,255,255,.72); border:1px solid rgba(255,255,255,.9); border-radius:28px; box-shadow:0 24px 70px rgba(31,50,39,.1); backdrop-filter:blur(10px); }
+.logo-mark { display:flex; justify-content:center; gap:5px; margin-bottom:17px; }.logo-mark span { display:grid; place-items:center; width:35px; height:35px; border-radius:7px; background:#fff; border:1px solid var(--line); font-size:14px; font-weight:800; box-shadow:0 3px 0 #d8dbd4; }.logo-mark span:nth-child(3),.logo-mark span:nth-child(5) { background:var(--green); color:#fff; border-color:var(--green); }
+.brand { display:flex; justify-content:center; gap:8px; font-size:34px; line-height:1; font-weight:900; letter-spacing:-1.7px; }.brand-accent { color:var(--green-dark); }.tagline { margin:12px 0 36px; color:var(--muted); font-size:15px; }
+.field-label { display:block; margin:0 0 8px; text-align:left; color:#56635c; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.text-input { width:100%; height:52px; padding:0 16px; color:var(--ink); background:#fff; border:1px solid var(--line); border-radius:12px; outline:none; transition:.2s; }.text-input:focus { border-color:var(--green); box-shadow:0 0 0 3px rgba(85,163,106,.13); }.text-input::placeholder { color:#a3aaa6; }
+.primary-button,.secondary-button { height:52px; border:0; border-radius:12px; font-weight:800; transition:transform .15s,background .15s; }.primary-button { padding:0 22px; background:var(--green-dark); color:#fff; box-shadow:0 7px 16px rgba(57,129,83,.2); }.primary-button:hover:not(:disabled) { background:#2f7247; transform:translateY(-1px); }.home-primary { width:100%; margin-top:13px; display:flex; align-items:center; justify-content:center; gap:12px; }.home-primary span { font-size:20px; }
+.divider { display:flex; align-items:center; gap:12px; margin:25px 0 17px; color:#929a95; font-size:11px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; }.divider::before,.divider::after { content:""; height:1px; flex:1; background:var(--line); }
+.join-form { display:grid; grid-template-columns:1fr 118px; gap:9px; }.code-input { text-align:center; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }.secondary-button { color:#425047; background:#e8ebe5; }.secondary-button:hover:not(:disabled) { background:#dde2db; }.form-error { margin:14px 0 0; color:#a53d3d; font-size:13px; }.footer-note { margin:26px 0 0; color:#9aa19c; font-size:11px; }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+.game-shell { min-height:100vh; background:var(--paper); }.game-header { height:66px; display:grid; grid-template-columns:48px 1fr 48px; align-items:center; padding:0 26px; border-bottom:1px solid var(--line); background:rgba(255,255,255,.7); }.small-brand { font-size:21px; letter-spacing:-1px; }.icon-button { width:38px; height:38px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); font-size:20px; }.connection-dot { justify-self:end; width:10px; height:10px; border-radius:50%; background:var(--green); box-shadow:0 0 0 4px rgba(85,163,106,.12); }.connection-dot.offline { background:#bd5656; }
+.game-layout { min-height:calc(100vh - 66px); display:grid; grid-template-columns:280px 1fr; }.room-panel { padding:32px 24px; background:#f0f1eb; border-right:1px solid var(--line); }.eyebrow { margin:0 0 8px; color:#7f8b84; font-size:11px; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }.room-code { padding:0; border:0; background:transparent; color:var(--ink); font-size:29px; font-weight:900; letter-spacing:.13em; }.room-code span { color:#92a099; font-size:16px; }.panel-hint { margin:4px 0 35px; color:#89938e; font-size:11px; }.player-heading { display:flex; justify-content:space-between; margin-bottom:12px; color:#66736c; font-size:11px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }.player-heading span:last-child { padding:2px 7px; border-radius:8px; background:#dde2db; }.player-list { display:flex; flex-direction:column; gap:9px; }.player-card { display:flex; align-items:center; gap:10px; padding:11px; background:rgba(255,255,255,.75); border:1px solid #e1e3de; border-radius:12px; }.avatar { flex:none; display:grid; place-items:center; width:34px; height:34px; border-radius:10px; background:#dbeadd; color:var(--green-dark); font-weight:900; }.player-name { min-width:0; flex:1; display:flex; flex-direction:column; }.player-name strong { overflow:hidden; text-overflow:ellipsis; font-size:13px; }.player-name small { margin-top:2px; color:#94a098; font-size:8px; font-weight:900; letter-spacing:.1em; }.mini-board { width:30px; display:grid; grid-template-columns:repeat(5,4px); gap:2px; }.mini-tile { aspect-ratio:1; border-radius:1px; background:#dfe3dd; }.mini-1 { background:#b8c0ba; }.mini-2 { background:var(--gray); }.mini-3 { background:var(--yellow); }.mini-4 { background:var(--green); }
+.board-section { display:flex; flex-direction:column; align-items:center; padding:34px 24px 24px; }.status-copy { text-align:center; margin-bottom:22px; }.status-copy h1 { margin:0; font-size:25px; letter-spacing:-.04em; }.status-copy > p:last-child { max-width:390px; margin:7px auto 0; color:var(--muted); font-size:13px; }.board-section > .primary-button { margin-top:80px; min-width:180px; }
+.word-grid { position:relative; display:grid; grid-template-columns:repeat(5,52px); gap:7px; cursor:text; }.guess-capture { position:absolute; inset:0; z-index:2; width:100%; height:100%; border:0; opacity:0; cursor:text; }.tile { width:52px; height:52px; display:grid; place-items:center; border:2px solid #d5d9d3; border-radius:7px; background:#fff; font-size:25px; font-weight:900; text-transform:uppercase; transition:.15s; }.tile-filled { border-color:#9ba59f; transform:scale(1.02); }.tile-green { color:#fff; background:var(--green); border-color:var(--green); }.tile-yellow { color:#fff; background:var(--yellow); border-color:var(--yellow); }.tile-gray { color:#fff; background:var(--gray); border-color:var(--gray); }
+.keyboard { width:min(100%,500px); margin-top:25px; display:flex; flex-direction:column; gap:6px; }.key-row { display:flex; justify-content:center; gap:5px; }.key { min-width:34px; height:45px; padding:0 7px; border:0; border-radius:6px; background:#dfe2dc; color:#26332c; font-size:12px; font-weight:900; }.key:hover { filter:brightness(.96); }.wide-key { min-width:56px; font-size:10px; text-transform:uppercase; }.key-2 { color:#fff; background:var(--gray); }.key-3 { color:#fff; background:var(--yellow); }.key-4 { color:#fff; background:var(--green); }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@media (max-width:760px) { .game-layout { display:block; }.room-panel { padding:15px 18px; border-right:0; border-bottom:1px solid var(--line); }.panel-hint,.player-heading { display:none; }.room-panel > .eyebrow { display:inline; margin-right:8px; }.room-code { font-size:18px; }.player-list { margin-top:12px; flex-direction:row; overflow-x:auto; }.player-card { min-width:150px; }.game-header { padding:0 14px; }.board-section { padding:25px 10px 18px; }.status-copy { margin-bottom:18px; }.word-grid { grid-template-columns:repeat(5,min(15.5vw,52px)); }.tile { width:min(15.5vw,52px); height:min(15.5vw,52px); }.key { flex:1; min-width:0; padding:0 4px; }.wide-key { flex:1.45; }.home-card { padding:36px 22px 28px; } }
